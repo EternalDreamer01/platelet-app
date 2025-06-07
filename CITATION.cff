@@ -1,0 +1,14 @@
+cff-version: 1.2.0
+message: "If you use this software or refer to this work, please cite the following publication:"
+title: "PLATELET: Pioneering Security and Privacy Compliant Simulation for Intelligent Transportation Systems and V2X"
+authors:
+  - family-names: Hammi
+    given-names: Badis
+  - family-names: Kautz
+    given-names: Mathias
+  - family-names: Garcia-Alfaro
+    given-names: Joaquin
+doi: 10.1109/NCA61908.2024.00021
+date-released: 2024-10-01
+url: https://doi.org/10.1109/NCA61908.2024.00021
+version: 1.0.0
