@@ -1,7 +1,7 @@
 <script setup>
-import { invoke } from "@tauri-apps/api";
-import { ref } from "vue";
-import { open } from '@tauri-apps/api/dialog';
+import { invoke, isTauri } from "@tauri-apps/api/core";
+import { ref, onMounted } from "vue";
+import { open } from '@tauri-apps/plugin-dialog';
 
 const name = ref("");
 const artery_path = ref("No File Selected");
@@ -19,7 +19,18 @@ async function pick_folder() {
 
 
 async function create_project() {
-    invoke("create_new_project", {projectName: name.value, arteryPath: artery_path.value}).catch((error) => console.error(error));
+	const listenEventSaved = await listen('projectSaved', async () => {
+		try {
+			if (!isTauri) {
+				console.log('Not running inside Tauri, skipping invoke');
+				return;
+			}
+			await invoke("create_new_project", {projectName: name.value, arteryPath: artery_path.value});
+		}
+		catch(e) {
+			console.error(e);
+		}
+	})
 }
 </script>
 

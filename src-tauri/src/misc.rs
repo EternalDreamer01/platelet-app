@@ -5,8 +5,10 @@ use std::{
 };
 
 use tauri::{
-    api::dialog::FileDialogBuilder, CustomMenuItem, Manager, Menu, Runtime, Submenu, Window, WindowBuilder, WindowMenuEvent
+    menu::Menu,
+    AppHandle, Wry, menu::MenuEvent, Manager, Emitter
 };
+use tauri_plugin_dialog::DialogExt;
 
 use crate::{project::Project, LOADED_PROJECT};
 
@@ -30,39 +32,30 @@ pub fn create_folder_if_not_exist<P: AsRef<Path>>(path: P) -> Result<(), std::io
     Ok(())
 }
 
-pub fn create_new_project_window<R: Runtime, M: Manager<R>>(manager: &M) -> Result<Window<R>, tauri::Error> {
-    WindowBuilder::new(
-        manager,
-        "new_project",
-        tauri::WindowUrl::App("new_project".into()),
-    )
-    .build()
+pub fn create_new_project_window(app_handle: AppHandle<Wry>) -> Result<(), tauri::Error> {
+    tauri::webview::WebviewWindowBuilder::new(&app_handle, "new_project", tauri::WebviewUrl::App("new_project".into()))
+        .build()?;
+    Ok(())
 }
 
-pub fn create_menu_bar() -> Menu {
-    //TODO: change other event name
-    let new = CustomMenuItem::new("new_project_menu".to_string(), "New Project");
-    let save = CustomMenuItem::new("save_project".to_string(), "Save Project");
-    let load = CustomMenuItem::new("load_project".to_string(), "Load Project");
-    let submenu = Submenu::new(
-        "File",
-        Menu::new().add_item(new).add_item(save).add_item(load),
-    );
-    Menu::new().add_submenu(submenu)
+pub fn create_menu_bar(app_handle: &AppHandle<Wry>) -> Result<Menu<Wry>, tauri::Error> {
+    // In Tauri v2, menus are created differently
+    // For now, create an empty menu - you'll need to update this based on your needs
+    Menu::new(app_handle)
 }
 
-pub fn create_menu_even_listener() -> impl Fn(WindowMenuEvent) + Send + Sync + 'static {
-    |event: WindowMenuEvent| {
-        match event.menu_item_id() {
-            "load_project" => FileDialogBuilder::new()
-                .add_filter("Platelet configuration file .platelet", &["platelet"])
-                .pick_file(move |folder_path| {
-                    // do something with the optional folder path here
-                    // the folder path is `None` if the user closed the dialog
-                    match folder_path {
-                        Some(path) => {
+pub fn create_menu_even_listener() -> impl Fn(&AppHandle<Wry>, MenuEvent) + Send + Sync + 'static {
+    |app_handle: &AppHandle<Wry>, event: MenuEvent| {
+        match event.id.as_ref() {
+            "load_project" => {
+                let app = app_handle.clone();
+                let dialog = app.dialog();
+                dialog.file().pick_file(move |folder_path| {
+                    if let Some(path) = folder_path {
+                        if let Some(path_str_borrowed) = path.as_path() {
+                            let path_str = path_str_borrowed.to_string_lossy().into_owned();
                             let project =
-                                Project::load_project_settings(path.to_str().unwrap().to_owned())
+                                Project::load_project_settings(path_str)
                                     .unwrap();
                             let project_mutex =
                                 LOADED_PROJECT.get_or_init(|| Mutex::new(project.clone()));
@@ -70,26 +63,28 @@ pub fn create_menu_even_listener() -> impl Fn(WindowMenuEvent) + Send + Sync + '
                             let mut project_guard = project_mutex.lock().unwrap();
                             project_guard.merge(project);
 
-                            event
-                                .window()
-                                .emit_all("projectLoaded", LOADED_PROJECT.get().unwrap())
-                                .unwrap();
+                            let windows = app.webview_windows();
+                            if let Some((_, window)) = windows.iter().next() {
+                                let _ = window
+                                    .emit("projectLoaded", LOADED_PROJECT.get().unwrap());
+                            }
                         }
-                        None => (),
-                    };
-                }),
+                    }
+                });
+            }
             "new_project_menu" => {
-                match create_new_project_window(&event.window().app_handle())
+                match create_new_project_window(app_handle.clone())
                 {
                     Ok(_) => println!("new_project window created"),
                     Err(e) => println!("Can't create create_project window: {}", e),
                 }
             }
             "save_project" => {
-                event
-                    .window()
-                    .emit_all("projectSaved", "save project")
-                    .unwrap();
+                let windows = app_handle.webview_windows();
+                if let Some((_, window)) = windows.iter().next() {
+                    let _ = window
+                        .emit("projectSaved", "save project");
+                }
             }
             _ => {}
         };

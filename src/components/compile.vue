@@ -1,19 +1,37 @@
 <script setup>
-import { ref } from "vue";
-import { invoke } from "@tauri-apps/api/tauri";
+import { ref, onMounted } from "vue";
+import { invoke, isTauri } from "@tauri-apps/api/core";
 import { useProjectStore } from "~/stores/projectStore";
 
 const projectStore = useProjectStore();
 
 async function compile_artery() {
-  // Learn more about Tauri commands at https://tauri.app/v1/guides/features/command
-  await invoke("compile_artery").catch((error) => console.error(error));
+	if (!isTauri) {
+		console.log('Not running inside Tauri, skipping invoke');
+		return;
+	}
+	try {
+		// Learn more about Tauri commands at https://tauri.app/v1/guides/features/command
+		await invoke("compile_artery").catch((error) => console.error(error));
+	}
+	catch(e) {
+		console.error(e);
+	}
 }
 
 
 async function build_config() {
-  await invoke('save_project', {project: projectStore.project}).catch((error) => console.log(error));
-  invoke("build_config").catch((error) => console.error(error));
+	if (!isTauri) {
+		console.log('Not running inside Tauri, skipping invoke');
+		return;
+	}
+	try {
+		await invoke('save_project', {project: projectStore.project}).catch((error) => console.log(error));
+		await invoke("build_config").catch((error) => console.error(error));
+	}
+	catch(e) {
+		console.error(e);
+	}
 }
 </script>
 
