@@ -14,17 +14,16 @@ To run the Platelet App you need a couple system dependancies. You can install t
 ```sh
 sudo apt update
 sudo apt install \
-	libwebkit2gtk-4.1-dev \
-	libjavascriptcoregtk-4.1-dev \
-    build-essential \
+	libjavascriptcoregtk-4.0-dev \
+	build-essential \
 	pkg-config \
-    curl \
-    wget \
-    file \
-    libssl-dev \
-    libgtk-3-dev \
-    libayatana-appindicator3-dev \
-    librsvg2-dev
+	curl \
+	wget \
+	file \
+	libssl-dev \
+	libgtk-3-dev \
+	libayatana-appindicator3-dev \
+	librsvg2-dev
 ```
 
 ### Rust

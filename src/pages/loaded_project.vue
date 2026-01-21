@@ -2,41 +2,19 @@
 <script setup>
 // This starter template is using Vue 3 <script setup> SFCs
 // Check out https://vuejs.org/api/sfc-script-setup.html#script-setup
-import { onMounted } from "vue";
-import { invoke, isTauri } from "@tauri-apps/api/core";
+import { invoke } from "@tauri-apps/api";
 import Compile from "~/components/compile.vue";
 import Config from "~/components/config.vue";
 import { listen } from '@tauri-apps/api/event';
 import { useProjectStore } from "~/stores/projectStore";
 
 const projectStore = useProjectStore();
-onMounted(async () => {
-	try {
-		if (!isTauri) {
-			console.log('Not running inside Tauri, skipping invoke');
-			return;
-		}
-		await invoke('get_loaded_project')
-		projectStore.updateProject(value);
-	}
-	catch(e) {
-		console.error(e);
-	}
+await invoke('get_loaded_project').catch((error) => { console.log(error)}).then((value) => {
+  projectStore.updateProject(value);
 });
-
-
 const listenEventLoaded = await listen('projectLoaded', (event) => { projectStore.project = event.payload})
-const listenEventSaved = await listen('projectSaved', async () => {
-	try {
-		if (!isTauri) {
-			console.log('Not running inside Tauri, skipping invoke');
-			return;
-		}
-		await invoke('save_project', {project: projectStore.project})
-	}
-	catch(e) {
-		console.error(e);
-	}
+const listenEventSaved = await listen('projectSaved', () => {
+  invoke('save_project', {project: projectStore.project}).catch((error) => console.log(error))
 })
 const onUpdate = (config) => {
   projectStore.updateProjec(config);

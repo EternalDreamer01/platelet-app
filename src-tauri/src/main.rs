@@ -6,7 +6,7 @@ use std::{env::set_current_dir, path::Path, process::Command, sync::Mutex};
 use misc::{create_folder_if_not_exist, create_menu_bar, create_menu_even_listener, create_new_project_window};
 use once_cell::sync::OnceCell;
 use project::Project;
-use tauri::{Manager, Listener, menu::Menu};
+use tauri::Manager;
 
 mod artery_configuration_builder;
 mod misc;
@@ -141,7 +141,6 @@ async fn save_project(project: Project) -> Result<(), String> {
 
 fn main() {
     tauri::Builder::default()
-		.plugin(tauri_plugin_dialog::init())
         .invoke_handler(tauri::generate_handler![
             compile_artery,
             build_config,
@@ -149,16 +148,20 @@ fn main() {
             get_loaded_project,
             load_project,
             save_project,
-        ])
-		.setup(|app| {
-            let app_handle = app.app_handle();
-            
-            // Build the menu with app handle
-            let menu = create_menu_bar(app_handle).unwrap_or_else(|_| Menu::new(app_handle).unwrap());
-            app_handle.set_menu(menu)?;
+        ]).setup(|app| {
+            //TODO: own setup function do not let it in main file
+            let window = app.get_window("main").unwrap();
+
+            window.clone().listen_global("new_project",move | _event| {
+                match create_new_project_window(&(window).app_handle()) {
+                    Ok(_) => (),
+                    Err(e) => println!("Can't create new project window: {}", e)
+                }
+            });
 
             Ok(())
         })
+        .menu(create_menu_bar())
         .on_menu_event(create_menu_even_listener())
         .run(tauri::generate_context!())
         .expect("error while running tauri application");

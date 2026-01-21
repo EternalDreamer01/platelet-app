@@ -1,7 +1,6 @@
 <script setup>
-import { onMounted } from "vue";
-import { invoke, isTauri } from "@tauri-apps/api/core";
-import { open } from '~/components/open';
+import { invoke } from '@tauri-apps/api';
+import { open } from '@tauri-apps/api/dialog';
 import { emit } from '@tauri-apps/api/event'
 
 const projectPath = ref("");
@@ -22,22 +21,12 @@ async function pick_file() {
 }
 
 async function load_project() {
-	try {
-		if (!isTauri) {
-			console.log('Not running inside Tauri, skipping invoke');
-			return;
-		}
-		await pick_file();
-		// await invoke('load_project', { path: projectPath.value})
-		window.location = "http://localhost:3000/loaded_project";
-	}
-	catch(e) {
-		console.error(e)
-	}
+    pick_file()
+    .then(() => { invoke('load_project', { path: projectPath.value}).then(() => {window.location = "http://localhost:3000/loaded_project"}, (error) => { console.log(error)})});
 }
 
 async function new_project() {
-//   emit("new_project", {});
+  emit("new_project", {});
 }
 
 </script>
@@ -46,11 +35,11 @@ async function new_project() {
     <div class="h-screen flex items-center justify-center overlay">
         <div class="flex gap-4">
             <div>
-                <button label="" @click="new_project">New Project</button>
+                <UButton label="New Project" @click="new_project"></UButton>
 
             </div>
             <div>
-                <button label="Load Project" @click="load_project">Load Project</button>
+                <UButton label="Load Project" @click="load_project"></UButton>
 
             </div>
         </div>
