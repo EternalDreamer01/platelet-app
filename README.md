@@ -2,6 +2,18 @@
 
 The Platelet application greatly simplify configuration of secured scenario runned by the fork of the Artery simulation framework provided by Platelet. This app is a Tauri app with a Rust backend and a Nuxt frontend.
 
+## Docker
+
+```sh
+docker build . -t platelet
+docker run \
+	-p 3000:3000 \
+	-e DISPLAY=$DISPLAY \
+	-v /tmp/.X11-unix:/tmp/.X11-unix \
+	--device /dev/dri \
+	platelet
+```
+
 ## Requirements
 
 - Node 20+
@@ -12,18 +24,21 @@ The Platelet application greatly simplify configuration of secured scenario runn
 To run the Platelet App you need a couple system dependancies. You can install them using this command on debian based linux distributions.
 
 ```sh
-sudo apt update
-sudo apt install \
+sudo apt-get update -y
+sudo apt-get install -y \
+	libwebkit2gtk-4.0-dev \
 	libjavascriptcoregtk-4.0-dev \
 	build-essential \
 	pkg-config \
 	curl \
 	wget \
 	file \
+	libsoup2.4-dev \
 	libssl-dev \
 	libgtk-3-dev \
 	libayatana-appindicator3-dev \
-	librsvg2-dev
+	librsvg2-dev \
+	curl
 ```
 
 ### Rust
@@ -31,7 +46,7 @@ sudo apt install \
 To build this app you will need the Rust toolchain. You can download and install the latest version of it using this command:
 
 ```sh
-curl --proto '=https' --tlsv1.2 https://sh.rustup.rs -sSf | sh
+curl https://sh.rustup.rs -sSf | sh -s -- -y
 ```
 
 ### Node.js
