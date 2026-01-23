@@ -4,26 +4,27 @@ import { invoke, isTauri } from "@tauri-apps/api/core";
 import { open } from '~/components/open';
 import { emit } from '@tauri-apps/api/event'
 
+
 const projectPath = ref("");
 
 async function pick_file() {
-  // Open a dialog
-  const file = await open({
-    multiple: false,
-    directory: false,
-    filters: [{
-    name: 'platelet',
-    extensions: ['platelet']
-  }]
-  });
-  if (file) {
-    return projectPath.value = file
-  }
+	// Open a dialog
+	const file = await open({
+		multiple: false,
+		directory: false,
+		filters: [{
+			name: 'platelet',
+			extensions: ['platelet']
+		}]
+	});
+	if (file) {
+		return projectPath.value = file
+	}
 }
 
 async function load_project() {
 	try {
-		if (!isTauri) {
+		if (!isTauri()) {
 			console.log('Not running inside Tauri, skipping invoke');
 			return;
 		}
@@ -32,7 +33,7 @@ async function load_project() {
 		window.location = "http://localhost:3000/loaded_project";
 	}
 	catch(e) {
-		console.error(e)
+		console.error(e);
 	}
 }
 

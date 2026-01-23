@@ -3,10 +3,10 @@
 
 use std::{env::set_current_dir, path::Path, process::Command, sync::Mutex};
 
-use misc::{create_folder_if_not_exist, create_menu_bar, create_menu_even_listener, create_new_project_window};
+use misc::{create_folder_if_not_exist, create_menu_bar, create_menu_even_listener};
 use once_cell::sync::OnceCell;
 use project::Project;
-use tauri::{Manager, Listener, menu::Menu};
+use tauri::{Manager, menu::Menu};
 
 mod artery_configuration_builder;
 mod misc;

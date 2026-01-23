@@ -1,8 +1,8 @@
 {
   "$schema": "../node_modules/@tauri-apps/cli/schema.json",
   "build": {
-    "beforeBuildCommand": "npm run generate",
-    "beforeDevCommand": "npm run dev"
+    "beforeBuildCommand": "pnpm run generate",
+    "beforeDevCommand": "pnpm run dev"
   },
   "identifier": "com.platelet",
   "productName": "platelet",
