@@ -5,23 +5,18 @@ The Platelet application greatly simplify configuration of secured scenario runn
 ## Docker
 
 ```sh
-docker build . -t platelet
-docker run \
-	-p 3000:3000 \
-	-e DISPLAY=$DISPLAY \
-	-v /tmp/.X11-unix:/tmp/.X11-unix \
-	--device /dev/dri \
-	platelet
+pnpm run docker:build
+pnpm run docker:run
 ```
 
-## Requirements
+## Installation on Host - Requirements
 
 - Node 20+
 - Rust
 
 ### System dependencies
 
-To run the Platelet App you need a couple system dependancies. You can install them using this command on debian based linux distributions.
+To run the Platelet App you need a couple of system dependncies. You can install them using this command on debian based linux distributions.
 
 ```sh
 sudo apt-get update -y

@@ -3,6 +3,8 @@
   "private": true,
   "type": "module",
   "scripts": {
+	"docker:build": "docker build --rm --build-arg UID=$(id -u) --build-arg GID=$(id -g) -t platelet .",
+	"docker:run": "docker run -p 3000:3000 -e DISPLAY=$DISPLAY -v /tmp/.X11-unix:/tmp/.X11-unix -v ./data:/root/data:rw --device /dev/dri platelet",
     "build": "nuxt build",
     "dev": "nuxt dev",
     "generate": "nuxt generate",
