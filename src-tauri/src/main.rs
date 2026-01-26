@@ -40,6 +40,10 @@ fn compile_artery() -> Result<(), String> {
     create_folder_if_not_exist(build_path)
         .map_err(|e| format!("Can't create build directory: {}", e))?;
 
+	println!("Project path: {}", loaded_project.project_name);
+	println!("Artery path: {}", artery_path);
+	println!("Build path: {}", build_path.display());
+
     Command::new("cmake")
         .args(["-S", ".", "-B", "./build/"])
         .spawn()
