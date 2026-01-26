@@ -224,8 +224,23 @@ impl ArteryConfigurationBuilder {
 		// Write per-project CMakeLists.txt
 		let mut cmake_scenario_file = File::create(&cmake_scenario_path)
 			.map_err(|e| format!("Can't create {}: {}", cmake_scenario_path.display(), e))?;
+		const INCLUDE_OMNETPP: &str = "\
+cmake_minimum_required(VERSION 3.16)
+project(platelet)
+
+# Tell CMake where OMNeT++ is
+set(OMNETPP_ROOT "/path/to/omnetpp")  # <-- adjust this
+
+list(APPEND CMAKE_MODULE_PATH "${OMNETPP_ROOT}/cmake")
+
+find_package(OmnetPP REQUIRED)
+
+include(OmnetPP)
+
+add_opp_run({} CONFIG omnetpp.ini)
+"
 		cmake_scenario_file
-			.write_all(format!("add_opp_run({} CONFIG omnetpp.ini)\n", self.project_name).as_bytes())
+			.write_all(format!("", self.project_name).as_bytes())
 			.map_err(|e| format!("Can't write to {}: {}", cmake_scenario_path.display(), e))?;
 
 		// Update root CMakeLists.txt

@@ -35,6 +35,8 @@ RUN apt-get install -y \
 
 # Install Rust
 RUN curl https://sh.rustup.rs -sSf | sh -s -- -y
+RUN mkdir -p $HOME/.cargo \
+	&& echo -e '[build]\njobs = 8' > $HOME/.cargo/config.toml
 
 WORKDIR /app
 COPY . .
@@ -50,8 +52,8 @@ RUN git clone --depth=1 https://github.com/riebl/vanetza.git
 WORKDIR /app/vanetza
 RUN mkdir -p build \
 	&& cd build \
-	&& cmake -D BUILD_CERTIFY=ON .. \
-	&& make -j4
+	&& MAKEFLAGS=-j8 cmake -D BUILD_CERTIFY=ON .. \
+	&& make -j8
 WORKDIR /app
 
 # Install pnpm (preferred package manager)

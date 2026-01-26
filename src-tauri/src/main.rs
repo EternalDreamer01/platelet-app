@@ -41,11 +41,11 @@ fn compile_artery() -> Result<(), String> {
         .map_err(|e| format!("Can't create build directory: {}", e))?;
 
 	println!("Project path: {}", loaded_project.project_name);
-	println!("Artery path: {}", artery_path);
+	println!("Artery path: {}", loaded_project.artery_path);
 	println!("Build path: {}", build_path.display());
 
     Command::new("cmake")
-        .args(["-S", ".", "-B", "./build/"])
+        .args(["-S", &("./scenarios/".to_owned()+&loaded_project.project_name), "-B", "./build/"])
         .spawn()
         .unwrap()
         .wait()
@@ -78,6 +78,7 @@ fn build_config() {
             Ok(_) => (),
             Err(e) => println!("Can't build project configuration: {}", e),
         }
+        println!("Done !\n")
     } else {
         println!("Can't build project")
     }
