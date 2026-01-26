@@ -85,9 +85,11 @@ fn create_new_project(
     project_name: &str,
     artery_path: &str,
 ) -> Result<(), String> {
-    println!("Creating new project");
+    println!("Creating new project '{}': '{}'", project_name.to_string(), artery_path.to_string());
     let new_project = Project::new(project_name.to_string(), artery_path.to_string());
-    new_project.save_project_settings().unwrap();
+    new_project
+		.save_project_settings()
+		.map_err(|e| e.to_string())?;
     match LOADED_PROJECT.get() {
         Some(project_mutex) => match project_mutex.lock() {
             Ok(mut project) => project.merge(new_project),

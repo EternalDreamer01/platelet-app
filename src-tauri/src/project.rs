@@ -1,5 +1,5 @@
 use std::{
-    fs::{create_dir, File},
+    fs::{create_dir_all, File},
     io::{Read, Write},
 };
 
@@ -55,23 +55,29 @@ impl Project {
         self.config_template_paths = other.config_template_paths;
     }
 
-    pub fn save_project_settings(&self) -> Result<(), ProjectError> {
-        let project_path: String = format!("{}/scenarios/{}", self.artery_path, self.project_name);
-        if !folder_exist(project_path.to_owned()) {
-            create_dir(project_path.to_owned()).map_err(|e| ProjectError::Save(e.to_string()))?;
-        }
-        let mut f = File::create(format!("{}/{}.platelet", project_path, self.project_name))
-            .map_err(|e| ProjectError::Save(e.to_string()))?;
+	pub fn save_project_settings(&self) -> Result<(), ProjectError> {
+		let project_path = format!(
+			"{}/scenarios/{}",
+			self.artery_path, self.project_name
+		);
 
-        f.write_all(
-            serde_json::to_string(self)
-                .map_err(|e| ProjectError::Save(e.to_string()))?
-                .as_bytes(),
-        )
-        .map_err(|e| ProjectError::Save(e.to_string()))?;
+		// Create all directories if missing
+		create_dir_all(&project_path)
+    		.map_err(|e: std::io::Error| ProjectError::Save(e.to_string()))?;
 
-        Ok(())
-    }
+		let file_path = format!("{}/{}.platelet", project_path, self.project_name);
+
+		let mut f = File::create(&file_path)
+			.map_err(|e| ProjectError::Save(e.to_string()))?;
+
+		let json = serde_json::to_string(self)
+			.map_err(|e| ProjectError::Save(e.to_string()))?;
+
+		f.write_all(json.as_bytes())
+			.map_err(|e| ProjectError::Save(e.to_string()))?;
+
+		Ok(())
+	}
 
     pub fn load_project_settings(project_settings_path: String) -> Result<Project, ProjectError> {
         let mut f =
@@ -87,26 +93,26 @@ impl Project {
         }
     }
 
-    pub fn build_project_artery_configuration(&self) -> Result<(), ProjectError> {
-        if self.map_path.is_none() {
-            return Err(ProjectError::BuildArteryConfiguration(
-                "Map path is missing".to_string(),
-            ));
-        }
+	pub fn build_project_artery_configuration(&self) -> Result<(), ProjectError> {
+		let map_path = self.map_path.as_ref().ok_or_else(|| {
+			ProjectError::BuildArteryConfiguration("Map path is missing".to_string())
+		})?;
 
-        ArteryConfigurationBuilder::new(self.artery_path.to_owned())
-            .project_name(self.project_name.to_owned())
-            .map_path(self.map_path.to_owned().unwrap())
-            .config_template_paths(self.config_template_paths.to_owned())
-            .build()
-            .map_err(|e| ProjectError::BuildArteryConfiguration(e.to_string()))?;
+		ArteryConfigurationBuilder::new(self.artery_path.clone())
+			.project_name(self.project_name.clone())
+			.map_path(map_path.clone())
+			.config_template_paths(self.config_template_paths.clone())
+			.build()
+			.map_err(|e| ProjectError::BuildArteryConfiguration(e.to_string()))?;
 
-        self.security_configuration
-            .generate_certificates(
-                self.artery_path.to_owned() + "/scenarios/" + self.project_name.as_str(),
-            )
-            .map_err(|e| ProjectError::BuildSecurityConfiguration(e.to_string()))?;
+		self.security_configuration
+			.generate_certificates(format!(
+				"{}/scenarios/{}",
+				self.artery_path, self.project_name
+			))
+			.map_err(|e| ProjectError::BuildSecurityConfiguration(e.to_string()))?;
 
-        Ok(())
-    }
+		Ok(())
+	}
+
 }

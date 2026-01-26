@@ -1,11 +1,12 @@
 use std::{
     collections::HashMap,
-    fs::{self, create_dir, File},
+    fs::{self, create_dir, File, OpenOptions},
     io::Write,
     process::{Command, ExitStatus},
 };
 
 use strfmt::strfmt;
+use std::path::PathBuf;
 
 use crate::{config_template_path::ConfigTemplatePath, misc::folder_exist};
 
@@ -44,42 +45,56 @@ impl ArteryConfigurationBuilder {
         self
     }
 
-    fn build_net(osmfile_path: &str, netfile_path: &str) -> Result<ExitStatus, String> {
-        Ok(Command::new("netconvert")
-            .args([
-                "--osm-files",
-                osmfile_path,
-                "--output-file",
-                netfile_path,
-                "--geometry.remove",
-                "--roundabouts.guess",
-                "--ramps.guess",
-                "--junctions.join",
-                "--tls.guess-signals",
-                "--tls.discard-simple",
-                "--tls.join",
-            ])
-            .spawn()
-            .map_err(|e| format!("Can't spawn net building command: {}", e))?
-            .wait()
-            .map_err(|e| format!("Can't wait for net building command to end: {}", e))?)
-    }
+	fn build_net(osmfile_path: &str, netfile_path: &str) -> Result<ExitStatus, String> {
+		// println!("netconvert exists: {}", Path::new("/usr/bin/netconvert").exists());
+
+		let output = Command::new("/usr/bin/netconvert") // absolute path
+			.args([
+				"--osm-files",
+				osmfile_path,
+				"--output-file",
+				netfile_path,
+				"--geometry.remove",
+				"--roundabouts.guess",
+				"--ramps.guess",
+				"--junctions.join",
+				"--tls.guess-signals",
+				"--tls.discard-simple",
+				"--tls.join",
+			])
+			.output()
+			.map_err(|e| format!("Can't spawn net building command: {}", e))?;
+
+		if !output.status.success() {
+			return Err(format!(
+				"netconvert failed:\n{}",
+				String::from_utf8_lossy(&output.stderr)
+			));
+		}
+
+		Ok(output.status)
+	}
+
 
     fn build_trips(
         netfile_path: &str,
         tripsfile_path: &str,
         trips_number: u64,
     ) -> Result<ExitStatus, String> {
+		let sumo_home = std::env::var("SUMO_HOME")
+			.map_err(|_| "Environment variable SUMO_HOME is not set")?;
+		let mut random_trips = PathBuf::from(&sumo_home);
+		random_trips.push("tools");
+		random_trips.push("randomTrips.py");
+	
         Ok(Command::new("python3")
-            .args([
-                "/usr/local/share/sumo/tools/randomTrips.py",
-                "-n",
-                netfile_path,
-                "-p",
-                &trips_number.to_string(),
-                "-o",
-                tripsfile_path,
-            ])
+			.arg(random_trips)
+			.arg("-n")
+			.arg(netfile_path)
+			.arg("-p")
+			.arg(trips_number.to_string())
+			.arg("-o")
+			.arg(tripsfile_path)
             .spawn()
             .map_err(|e| format!("Can't spawn trips building command: {}", e))?
             .wait()
@@ -196,39 +211,43 @@ impl ArteryConfigurationBuilder {
         Ok(())
     }
 
-    fn update_cmake_file(self, scenario_path: String) -> Result<(), String> {
-        let cmake_scenario_path = scenario_path + "/CMakeLists.txt";
-        let cmake_folder_path: String = self.artery_path + "/scenarios/CMakeLists.txt";
+	fn update_cmake_file(&self, scenario_path: String) -> Result<(), String> {
+        println!("{}", scenario_path);
+		// Paths
+		let mut cmake_scenario_path = PathBuf::from(scenario_path);
+		cmake_scenario_path.push("CMakeLists.txt");
 
-        let mut cmake_scenario_file = File::create(cmake_scenario_path.to_owned())
-            .map_err(|e| format!("Can't create {}: {}", cmake_scenario_path, e.to_string()))?;
-        cmake_scenario_file
-            .write_all(format!("add_opp_run({} CONFIG omnetpp.ini)", self.project_name).as_bytes())
-            .map_err(|e| format!("Can't write to {}: {}", cmake_scenario_path, e.to_string()))?;
+		// let mut cmake_root_path = PathBuf::from(&self.artery_path);
+		// cmake_root_path.push("scenarios");
+		// cmake_root_path.push("CMakeLists.txt");
 
-        let mut cmake_folder_file = match File::options()
-            .read(true)
-            .append(true)
-            .open(cmake_folder_path.to_owned())
-        {
-            Ok(file) => Ok(file),
-            Err(e) => Err(format!(
-                "Can't open {}: {}",
-                cmake_folder_path.to_owned(),
-                e.to_string()
-            )),
-        }?;
-        let cmake_content = fs::read_to_string(cmake_folder_path.to_owned())
-            .map_err(|e| format!("Can't read {}: {}", cmake_folder_path, e.to_string()))?;
+		// Write per-project CMakeLists.txt
+		let mut cmake_scenario_file = File::create(&cmake_scenario_path)
+			.map_err(|e| format!("Can't create {}: {}", cmake_scenario_path.display(), e))?;
+		cmake_scenario_file
+			.write_all(format!("add_opp_run({} CONFIG omnetpp.ini)\n", self.project_name).as_bytes())
+			.map_err(|e| format!("Can't write to {}: {}", cmake_scenario_path.display(), e))?;
 
-        if !cmake_content.contains(format!("add_subdirectory({})\n", self.project_name).as_str()) {
-            cmake_folder_file
-                .write_all(format!("add_subdirectory({})\n", self.project_name).as_bytes())
-                .map_err(|e| format!("Can't write to {}: {}", cmake_folder_path, e.to_string()))?;
-        }
+		// Update root CMakeLists.txt
+		let mut cmake_root_file = OpenOptions::new()
+			.read(true)
+			.append(true)
+			// .create(true)
+			.open(&cmake_scenario_path)
+			.map_err(|e| format!("Can't open {}: {}", cmake_scenario_path.display(), e))?;
 
-        Ok(())
-    }
+		let cmake_content = std::fs::read_to_string(&cmake_scenario_path)
+			.map_err(|e| format!("Can't read {}: {}", cmake_scenario_path.display(), e))?;
+		let add_subdirectory_line = format!("add_subdirectory({})\n", self.project_name);
+		if !cmake_content.contains(&add_subdirectory_line) {
+			cmake_root_file
+				.write_all(add_subdirectory_line.as_bytes())
+				.map_err(|e| format!("Can't write to {}: {}", cmake_scenario_path.display(), e))?;
+		}
+
+		Ok(())
+	}
+
 
     pub fn build(self) -> Result<(), String> {
         let scenario_path = format!("{}/scenarios/{}", self.artery_path, self.project_name);

@@ -1,9 +1,14 @@
 FROM node:24-bookworm
 
+ENV SUMO_HOME=/usr/share/sumo
+ENV PATH="$SUMO_HOME/bin:/root/.cargo/bin:$PATH"
+ENV CI=true
+ENV RUST_BACKTRACE=1
 
 ENV DEBIAN_FRONTEND=noninteractive
 RUN apt-get update -y
 RUN apt-get install -y \
+	sumo sumo-tools \
 	libwebkit2gtk-4.0-dev \
 	libjavascriptcoregtk-4.0-dev \
 	build-essential \
@@ -11,31 +16,33 @@ RUN apt-get install -y \
 	curl \
 	wget \
 	file \
+	cmake \
 	libsoup2.4-dev \
 	libssl-dev \
+	ca-certificates \
 	libgtk-3-dev \
 	libayatana-appindicator3-dev \
 	librsvg2-dev \
-	curl
+	curl \
+	python3
+
 
 # Install Rust
 RUN curl https://sh.rustup.rs -sSf | sh -s -- -y
-ENV PATH="/root/.cargo/bin:${PATH}"
-
-# Install pnpm (preferred package manager)
-RUN npm install -g pnpm
 
 WORKDIR /app
 COPY . .
-
-# Install dependencies
-ENV CI=true
-RUN pnpm install
 
 # Pre-build Tauri application
 WORKDIR /app/src-tauri
 RUN cargo build
 WORKDIR /app
+
+# Install pnpm (preferred package manager)
+RUN npm install -g pnpm
+
+# Install dependencies
+RUN pnpm install
 
 EXPOSE 3000
 
@@ -46,5 +53,4 @@ EXPOSE 3000
 # RUN useradd -m -u $UID -g $GID -o -s /bin/bash $UNAME
 # RUN chown -R $UNAME:$UNAME .
 # USER $UNAME
-ENV RUST_BACKTRACE=1
 CMD ["pnpm", "tauri", "dev"]
