@@ -1,7 +1,7 @@
 FROM node:24-bookworm
 
 ENV SUMO_HOME=/usr/share/sumo
-ENV PATH="$SUMO_HOME/bin:/root/.cargo/bin:$PATH"
+ENV PATH="/app/vanetza/build/bin:$SUMO_HOME/bin:/root/.cargo/bin:$PATH"
 ENV CI=true
 ENV RUST_BACKTRACE=1
 
@@ -11,19 +11,25 @@ RUN apt-get install -y \
 	sumo sumo-tools \
 	libwebkit2gtk-4.0-dev \
 	libjavascriptcoregtk-4.0-dev \
+	libboost-all-dev \
+	libcrypto++-dev \
+	libgeographiclib-dev geographiclib-tools \
 	build-essential \
 	pkg-config \
 	curl \
 	wget \
 	file \
 	cmake \
+	automake \
+	libtool \
+	autoconf \
+	git \
 	libsoup2.4-dev \
 	libssl-dev \
 	ca-certificates \
 	libgtk-3-dev \
 	libayatana-appindicator3-dev \
 	librsvg2-dev \
-	curl \
 	python3
 
 
@@ -38,6 +44,16 @@ WORKDIR /app/src-tauri
 RUN cargo build
 WORKDIR /app
 
+
+# Build and install Vanetza from source
+RUN git clone --depth=1 https://github.com/riebl/vanetza.git
+WORKDIR /app/vanetza
+RUN mkdir -p build \
+	&& cd build \
+	&& cmake -D BUILD_CERTIFY=ON .. \
+	&& make -j4
+WORKDIR /app
+
 # Install pnpm (preferred package manager)
 RUN npm install -g pnpm
 
@@ -46,11 +62,4 @@ RUN pnpm install
 
 EXPOSE 3000
 
-# ARG UNAME=user
-# ARG UID=1000
-# ARG GID=1000
-# RUN groupadd -g $GID -o $UNAME
-# RUN useradd -m -u $UID -g $GID -o -s /bin/bash $UNAME
-# RUN chown -R $UNAME:$UNAME .
-# USER $UNAME
 CMD ["pnpm", "tauri", "dev"]
