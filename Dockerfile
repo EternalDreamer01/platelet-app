@@ -1,67 +1,192 @@
-FROM node:24-bookworm
 
-ENV SUMO_HOME=/usr/share/sumo
-ENV PATH="/app/vanetza/build/bin:$SUMO_HOME/bin:/root/.cargo/bin:$PATH"
-ENV CI=true
-ENV RUST_BACKTRACE=1
+ARG NODE_VERSION=24
 
-ENV DEBIAN_FRONTEND=noninteractive
-RUN apt-get update -y
-RUN apt-get install -y \
-	sumo sumo-tools \
-	libwebkit2gtk-4.0-dev \
-	libjavascriptcoregtk-4.0-dev \
-	libboost-all-dev \
-	libcrypto++-dev \
-	libgeographiclib-dev geographiclib-tools \
-	build-essential \
-	pkg-config \
-	curl \
-	wget \
-	file \
-	cmake \
-	automake \
-	libtool \
-	autoconf \
-	git \
-	libsoup2.4-dev \
-	libssl-dev \
-	ca-certificates \
-	libgtk-3-dev \
-	libayatana-appindicator3-dev \
-	librsvg2-dev \
-	python3
+# =========================
+# Stage 1 - builder image
+# =========================
+FROM node:$NODE_VERSION-bookworm AS builder
+
+ARG PROCESSORS=16
+ARG DEPS_PATH=/opt
+ARG OMNETPP_VERSION=5.6.3
+
+ENV DEBIAN_FRONTEND=noninteractive \
+    OMNETPP_HOME=${DEPS_PATH}/omnetpp-${OMNETPP_VERSION} \
+    SUMO_HOME=/usr/share/sumo \
+    CMAKE_PREFIX_PATH=/usr/local \
+    MAKEFLAGS=-j${PROCESSORS} \
+	LD_LIBRARY_PATH=/usr/local/lib
+
+SHELL ["/bin/bash", "-c"]
+
+# --------------------
+# Build dependencies
+# --------------------
+RUN apt-get update && apt-get install -y --no-install-recommends \
+    build-essential \
+    cmake \
+    ninja-build \
+    ccache \
+    git \
+    curl \
+    ca-certificates \
+    gcc g++ \
+    bison flex \
+    python3 python3-dev python3-venv \
+    libxml2-dev \
+    zlib1g-dev \
+    automake autoconf libtool \
+    libboost-all-dev \
+    libssl-dev \
+    libcrypto++-dev \
+    libgeographiclib-dev \
+    pkg-config \
+    sumo \
+ && rm -rf /var/lib/apt/lists/*
+
+# --------------------
+# ccache setup
+# --------------------
+ENV CC="ccache gcc" \
+    CXX="ccache g++" \
+    CCACHE_DIR=/ccache
+
+RUN mkdir -p /ccache && ccache --set-config=max_size=10G
+
+# --------------------
+# OMNeT++
+# --------------------
+WORKDIR ${DEPS_PATH}
+
+RUN curl -fL https://github.com/omnetpp/omnetpp/releases/download/omnetpp-${OMNETPP_VERSION}/omnetpp-${OMNETPP_VERSION}-src-linux.tgz \
+ | tar xz
+
+WORKDIR ${OMNETPP_HOME}
+
+RUN source ${OMNETPP_HOME}/setenv \
+	&& ./configure \
+        WITH_QTENV=no \
+        WITH_TKENV=no \
+        WITH_OSG=no \
+        WITH_OSGEARTH=no \
+	&& make -j${PROCESSORS}
+
+# RUN find ${OMNETPP_HOME} -name *.cmake && exit 1
+
+ENV PATH=${OMNETPP_HOME}/bin:$PATH \
+    LD_LIBRARY_PATH=${OMNETPP_HOME}/lib:$LD_LIBRARY_PATH
+
+# --------------------
+# Vanetza (CERTIFY FIRST)
+# --------------------
+WORKDIR ${DEPS_PATH}
+RUN git clone --depth=1 https://github.com/riebl/vanetza.git
+
+WORKDIR ${DEPS_PATH}/vanetza
+
+RUN cmake -S . -B build -G Ninja \
+      -DBUILD_CERTIFY=ON \
+      -DBUILD_TESTS=OFF \
+      -DBUILD_BENCHMARK=OFF \
+      -DOmnetPP_DIR=${OMNETPP_HOME}/lib/cmake/OmnetPP \
+      -DCMAKE_BUILD_TYPE=Release \
+      -DCMAKE_C_COMPILER_LAUNCHER=ccache \
+      -DCMAKE_CXX_COMPILER_LAUNCHER=ccache \
+ && cmake --build build --parallel ${PROCESSORS} \
+ && cmake --install build
+RUN mv build/bin/* /usr/local/bin/
+
+# --------------------
+# HARD FAIL if CERTIFY missing
+# --------------------
+RUN which certify
+
+# --------------------
+# Artery (FORCED to CERTIFY Vanetza)
+# --------------------
+WORKDIR ${DEPS_PATH}
+RUN git clone --recurse-submodules --depth=1 -j${PROCESSORS} https://github.com/riebl/artery.git
+
+WORKDIR ${DEPS_PATH}/artery
+
+RUN source ${OMNETPP_HOME}/setenv \
+	&& cmake -S . -B build -G Ninja \
+      -DOmnetPP_DIR=${OMNETPP_HOME}/lib/cmake/OmnetPP \
+      -DCMAKE_PREFIX_PATH=/usr/local \
+      -DCMAKE_BUILD_TYPE=Release \
+      -Dvanetza_DIR=/usr/local/lib/cmake/vanetza \
+	&& cmake --build build --parallel ${PROCESSORS} \
+	&& cmake --install build
 
 
-# Install Rust
+# =========================
+# Stage 2 - runtime image
+# =========================
+FROM node:$NODE_VERSION-bookworm AS runtime
+
+ARG DEPS_PATH=/opt
+ARG OMNETPP_VERSION=5.6.3
+ENV OMNETPP_HOME=$DEPS_PATH/omnetpp-${OMNETPP_VERSION} \
+	SUMO_HOME=/usr/share/sumo \
+	ARTERY_HOME=$DEPS_PATH/artery \
+	PLATELET_HOME=/app \
+	PLATELET_TAURI_HOME=/app/src-tauri
+ENV PATH=$OMNETPP_HOME/bin:$SUMO_HOME/bin:/root/.cargo/bin:/usr/local/bin:$PATH \
+    LD_LIBRARY_PATH=$OMNETPP_HOME/lib:/usr/local/lib \
+    NO_AT_BRIDGE=1 \
+    RUST_BACKTRACE=1 \
+    CI=true
+
+COPY --from=builder $OMNETPP_HOME $OMNETPP_HOME
+COPY --from=builder $ARTERY_HOME $ARTERY_HOME
+COPY --from=builder /usr/local /usr/local
+
+RUN apt-get update && apt-get install -y \
+		sumo \
+		libwebkit2gtk-4.0-dev \
+		libjavascriptcoregtk-4.0-dev \
+		libgtk-3-dev \
+		libboost-all-dev \
+		libcrypto++-dev \
+		libgeographiclib-dev \
+		build-essential \
+		libxml2-dev \
+		zlib1g-dev \
+		libssl-dev \
+		python3 \
+		curl \
+		git \
+		cmake \
+	&& rm -rf /var/lib/apt/lists/*
+
+RUN git clone --depth=1 https://github.com/omnetpp/cmake.git $OMNETPP_HOME/cmake
+
+# --------------------
+# Rust + Node deps (build only)
+# --------------------
 RUN curl https://sh.rustup.rs -sSf | sh -s -- -y
 RUN mkdir -p $HOME/.cargo \
-	&& echo -e '[build]\njobs = 8' > $HOME/.cargo/config.toml
+	&& printf "[build]\njobs = %d" 4 > $HOME/.cargo/config.toml
 
-WORKDIR /app
+RUN apt-get remove -y curl git && apt-get autoremove -y && apt-get clean
+
+
+WORKDIR $PLATELET_TAURI_HOME
+COPY src-tauri/Cargo.toml src-tauri/Cargo.lock ./
+# dummy build to get the dependencies cached.
+RUN mkdir -p src && echo "// dummy file" > src/lib.rs && cargo build
+
+
+WORKDIR $PLATELET_HOME
+EXPOSE 3000
+COPY package.json pnpm-lock.yaml ./
+RUN npm install -g pnpm && pnpm install
+
 COPY . .
 
-# Pre-build Tauri application
-WORKDIR /app/src-tauri
+WORKDIR $PLATELET_TAURI_HOME
 RUN cargo build
-WORKDIR /app
 
+WORKDIR $PLATELET_HOME
 
-# Build and install Vanetza from source
-RUN git clone --depth=1 https://github.com/riebl/vanetza.git
-WORKDIR /app/vanetza
-RUN mkdir -p build \
-	&& cd build \
-	&& MAKEFLAGS=-j8 cmake -D BUILD_CERTIFY=ON .. \
-	&& make -j8
-WORKDIR /app
-
-# Install pnpm (preferred package manager)
-RUN npm install -g pnpm
-
-# Install dependencies
-RUN pnpm install
-
-EXPOSE 3000
-
-CMD ["pnpm", "tauri", "dev"]
+CMD ["/bin/bash", "-lc", "source $OMNETPP_HOME/setenv && pnpm tauri dev"]

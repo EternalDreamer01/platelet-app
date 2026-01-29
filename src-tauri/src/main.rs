@@ -15,6 +15,7 @@ mod security_configuration;
 mod config_template_path;
 
 static LOADED_PROJECT: OnceCell<Mutex<Project>> = OnceCell::new();
+const PROJECT_BUILD: &str = "./build";
 
 //TODO: move commands in dedicated file main is too long
 
@@ -35,7 +36,7 @@ fn compile_artery() -> Result<(), String> {
     let artery_path = loaded_project.artery_path.clone();
     set_current_dir(artery_path).map_err(|e| format!("Can't change directory to artery: {}", e))?;
 
-    let build_path = Path::new("./build");
+    let build_path = Path::new(PROJECT_BUILD);
 
     create_folder_if_not_exist(build_path)
         .map_err(|e| format!("Can't create build directory: {}", e))?;
@@ -44,25 +45,47 @@ fn compile_artery() -> Result<(), String> {
 	println!("Artery path: {}", loaded_project.artery_path);
 	println!("Build path: {}", build_path.display());
 
-    Command::new("cmake")
-        .args(["-S", &("./scenarios/".to_owned()+&loaded_project.project_name), "-B", "./build/"])
-        .spawn()
-        .unwrap()
-        .wait()
-        .unwrap();
+	// let OMNETPP_HOME: std::string::String = std::env::var("OMNETPP_HOME")
+	// 	.expect("OMNETPP_HOME is not set");
 
-    let proc_number = match std::env::var("nproc") {
-        Ok(nproc) => nproc,
-        Err(_) => String::from("1"),
-    };
+	// let ARTERY_HOME: std::string::String = std::env::var("ARTERY_HOME")
+	// 	.expect("ARTERY_HOME is not set");
+
+    Command::new("cmake")
+        .args([
+			"-S",
+			&("./scenarios/".to_owned()+&loaded_project.project_name),
+			"-B",
+			PROJECT_BUILD,
+			// &format!("-DCMAKE_MODULE_PATH={}", OMNETPP_HOME), //, ARTERY_HOME),
+		])
+        .spawn()
+        .unwrap();
+	
+	let jobs = std::thread::available_parallelism()
+		.map(|n| {
+			let cpus = n.get();
+			let jobs = if cpus > 6 { cpus - 6 } else { 2 };
+			jobs.to_string()
+		})
+		.unwrap_or_else(|_| "2".to_string());
+
+	println!("cmake prepared with {} jobs", jobs);
+	// assert!(
+	// 	std::path::Path::new(PROJECT_BUILD).join("Makefile").exists()
+	// 		|| std::path::Path::new(PROJECT_BUILD).join("build.ninja").exists(),
+	// 	"CMake was not configured: no Makefile or build.ninja found"
+	// );
+
 
     Command::new("cmake")
         .args([
             "--build",
-            "./build",
+            PROJECT_BUILD,
             "--target",
             format!("run_{}", loaded_project.project_name).as_str(),
-            format!("-j{}", proc_number).as_str(),
+			"--parallel",
+			&jobs,
         ])
         .spawn()
         .unwrap();

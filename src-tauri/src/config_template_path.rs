@@ -9,10 +9,12 @@ pub struct ConfigTemplatePath {
 
 impl Default for ConfigTemplatePath {
     fn default() -> Self {
+        let PLATELET_TAURI_HOME: std::string::String = std::env::var("PLATELET_TAURI_HOME")
+			.expect("PLATELET_TAURI_HOME is not set");
         Self {
-            omnetpp_path: String::from("./assets/omnetpp.ini"),
-            sumocfg_path: String::from("./assets/base.sumocfg"),
-            services_path: String::from("./assets/services.xml"),
+            omnetpp_path: String::from(&format!("{}/assets/omnetpp.ini", PLATELET_TAURI_HOME)),
+            sumocfg_path: String::from(&format!("{}/assets/base.sumocfg", PLATELET_TAURI_HOME)),
+            services_path: String::from(&format!("{}/assets/services.xml", PLATELET_TAURI_HOME)),
         }
     }
 }

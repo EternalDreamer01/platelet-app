@@ -23,7 +23,11 @@ pub struct ArteryConfigurationBuilder {
 
 impl ArteryConfigurationBuilder {
     pub fn new(artery_path: String) -> ArteryConfigurationBuilder {
+        let PLATELET_TAURI_HOME: std::string::String = std::env::var("PLATELET_TAURI_HOME")
+			.expect("PLATELET_TAURI_HOME is not set");
+		
         ArteryConfigurationBuilder {
+			map_path: format!("{}/assets/map.osm", PLATELET_TAURI_HOME),
             artery_path,
             trips_number: 10,
             ..Default::default()
@@ -158,8 +162,11 @@ impl ArteryConfigurationBuilder {
     fn build_omnet_config_file(&self, scenario_path: String) -> Result<(), String> {
         let sumocfg_path = format!("{}/{}.sumocfg", scenario_path, self.project_name);
 
+		let PLATELET_TAURI_HOME: std::string::String = std::env::var("PLATELET_TAURI_HOME")
+			.expect("PLATELET_TAURI_HOME is not set");
+		
         fs::copy(
-            "./assets/vehicles.xml",
+            &format!("{}/assets/vehicles.xml", PLATELET_TAURI_HOME),
             scenario_path.to_owned() + "/vehicles.xml",
         )
         .map_err(|e| {
@@ -224,23 +231,20 @@ impl ArteryConfigurationBuilder {
 		// Write per-project CMakeLists.txt
 		let mut cmake_scenario_file = File::create(&cmake_scenario_path)
 			.map_err(|e| format!("Can't create {}: {}", cmake_scenario_path.display(), e))?;
-		const INCLUDE_OMNETPP: &str = "\
-cmake_minimum_required(VERSION 3.16)
-project(platelet)
 
-# Tell CMake where OMNeT++ is
-set(OMNETPP_ROOT "/path/to/omnetpp")  # <-- adjust this
-
-list(APPEND CMAKE_MODULE_PATH "${OMNETPP_ROOT}/cmake")
-
-find_package(OmnetPP REQUIRED)
-
-include(OmnetPP)
-
-add_opp_run({} CONFIG omnetpp.ini)
-"
 		cmake_scenario_file
-			.write_all(format!("", self.project_name).as_bytes())
+			.write_all(format!(r#"
+cmake_minimum_required(VERSION 3.20)
+project({0})
+
+set(ARTERY_HOME "$ENV{{ARTERY_HOME}}")
+set(CMAKE_MODULE_PATH "${{ARTERY_HOME}}/cmake")
+
+add_subdirectory(${{ARTERY_HOME}} artery)
+
+set(ASSETS "$ENV{{PLATELET_TAURI_HOME}}/assets")
+add_opp_run({0} CONFIG ${{ASSETS}}/omnetpp.ini)
+"#, self.project_name).as_bytes())
 			.map_err(|e| format!("Can't write to {}: {}", cmake_scenario_path.display(), e))?;
 
 		// Update root CMakeLists.txt
@@ -253,12 +257,12 @@ add_opp_run({} CONFIG omnetpp.ini)
 
 		let cmake_content = std::fs::read_to_string(&cmake_scenario_path)
 			.map_err(|e| format!("Can't read {}: {}", cmake_scenario_path.display(), e))?;
-		let add_subdirectory_line = format!("add_subdirectory({})\n", self.project_name);
-		if !cmake_content.contains(&add_subdirectory_line) {
-			cmake_root_file
-				.write_all(add_subdirectory_line.as_bytes())
-				.map_err(|e| format!("Can't write to {}: {}", cmake_scenario_path.display(), e))?;
-		}
+		// let add_subdirectory_line = format!("add_subdirectory({})\n", self.project_name);
+		// if !cmake_content.contains(&add_subdirectory_line) {
+		// 	cmake_root_file
+		// 		.write_all(add_subdirectory_line.as_bytes())
+		// 		.map_err(|e| format!("Can't write to {}: {}", cmake_scenario_path.display(), e))?;
+		// }
 
 		Ok(())
 	}
