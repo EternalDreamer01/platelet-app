@@ -221,7 +221,7 @@ impl ArteryConfigurationBuilder {
 	fn update_cmake_file(&self, scenario_path: String) -> Result<(), String> {
         println!("{}", scenario_path);
 		// Paths
-		let mut cmake_scenario_path = PathBuf::from(scenario_path);
+		let mut cmake_scenario_path = PathBuf::from(scenario_path.clone());
 		cmake_scenario_path.push("CMakeLists.txt");
 
 		// let mut cmake_root_path = PathBuf::from(&self.artery_path);
@@ -244,27 +244,28 @@ add_subdirectory(${{ARTERY_HOME}} artery)
 
 # set(PROJECT_NAME ${{PROJECT_NAME}})
 set(ASSETS "$ENV{{PLATELET_TAURI_HOME}}/assets")
-add_opp_run(${{PROJECT_NAME}} CONFIG ${{ASSETS}}/omnetpp.ini)
+add_opp_run(
+	${{PROJECT_NAME}}
+	CONFIG omnetpp.ini
+)
 "#, self.project_name).as_bytes())
 			.map_err(|e| format!("Can't write to {}: {}", cmake_scenario_path.display(), e))?;
 
 		// Update root CMakeLists.txt
-		let mut cmake_root_file = OpenOptions::new()
-			.read(true)
-			.append(true)
-			// .create(true)
-			.open(&cmake_scenario_path)
-			.map_err(|e| format!("Can't open {}: {}", cmake_scenario_path.display(), e))?;
+		// let mut cmake_root_file = OpenOptions::new()
+		// 	.read(true)
+		// 	.append(true)
+		// 	// .create(true)
+		// 	.open(&cmake_scenario_path)
+		// 	.map_err(|e| format!("Can't open {}: {}", cmake_scenario_path.display(), e))?;
 
-		let cmake_content = std::fs::read_to_string(&cmake_scenario_path)
-			.map_err(|e| format!("Can't read {}: {}", cmake_scenario_path.display(), e))?;
-		// let add_subdirectory_line = format!("add_subdirectory({})\n", self.project_name);
-		// if !cmake_content.contains(&add_subdirectory_line) {
-		// 	cmake_root_file
-		// 		.write_all(add_subdirectory_line.as_bytes())
-		// 		.map_err(|e| format!("Can't write to {}: {}", cmake_scenario_path.display(), e))?;
-		// }
-
+		let mut omnetpp_scenario_path = PathBuf::from(scenario_path);
+		omnetpp_scenario_path.push("omnetpp.ini");
+		let omnetpp_content = std::fs::read_to_string(&omnetpp_scenario_path)
+			.map_err(|e| format!("Can't read {}: {}", omnetpp_scenario_path.display(), e))?;
+		let omnetpp_content = omnetpp_content.replace("${PROJECT_NAME}", &self.project_name);
+		fs::write(&omnetpp_scenario_path, omnetpp_content)
+				.map_err(|e| format!("Can't write to {}: {}", omnetpp_scenario_path.display(), e))?;
 		Ok(())
 	}
 
