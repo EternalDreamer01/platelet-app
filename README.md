@@ -16,8 +16,8 @@ docker run --rm \
 
 ### Build
 ```sh
-pnpm run docker:build
-pnpm run docker:run
+npm run docker:build
+npm run docker:run
 ```
 
 ## Installation on Host
