@@ -242,8 +242,9 @@ set(CMAKE_MODULE_PATH "${{ARTERY_HOME}}/cmake")
 
 add_subdirectory(${{ARTERY_HOME}} artery)
 
+# set(PROJECT_NAME ${{PROJECT_NAME}})
 set(ASSETS "$ENV{{PLATELET_TAURI_HOME}}/assets")
-add_opp_run({0} CONFIG ${{ASSETS}}/omnetpp.ini)
+add_opp_run(${{PROJECT_NAME}} CONFIG ${{ASSETS}}/omnetpp.ini)
 "#, self.project_name).as_bytes())
 			.map_err(|e| format!("Can't write to {}: {}", cmake_scenario_path.display(), e))?;
 

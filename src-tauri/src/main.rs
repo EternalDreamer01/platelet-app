@@ -65,10 +65,10 @@ fn compile_artery() -> Result<(), String> {
 	let jobs = std::thread::available_parallelism()
 		.map(|n| {
 			let cpus = n.get();
-			let jobs = if cpus > 6 { cpus - 6 } else { 2 };
-			jobs.to_string()
+			// take 2/3 of CPUs, at least 1
+			((cpus * 2) / 3).max(1).to_string()
 		})
-		.unwrap_or_else(|_| "2".to_string());
+		.unwrap_or_else(|_| "1".to_string());
 
 	println!("cmake prepared with {} jobs", jobs);
 	// assert!(
