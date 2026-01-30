@@ -7,7 +7,7 @@ use serde::{Deserialize, Serialize};
 use thiserror::Error;
 
 use crate::{
-    artery_configuration_builder::ArteryConfigurationBuilder, config_template_path::ConfigTemplatePath, misc::folder_exist, security_configuration::SecurityConfiguration
+    artery_configuration_builder::ArteryConfigurationBuilder, config_template_path::ConfigTemplatePath, security_configuration::SecurityConfiguration
 };
 #[derive(Debug, Error)]
 pub enum ProjectError {

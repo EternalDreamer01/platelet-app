@@ -21,17 +21,17 @@ pub struct SecurityConfiguration {
 }
 
 impl SecurityConfiguration {
-    pub fn new(
-        root_authority_number: u64,
-        aa_per_root: u64,
-        ticket_per_aa: u64,
-    ) -> SecurityConfiguration {
-        SecurityConfiguration {
-            root_authority_number,
-            aa_per_root,
-            ticket_per_aa,
-        }
-    }
+    // pub fn new(
+    //     root_authority_number: u64,
+    //     aa_per_root: u64,
+    //     ticket_per_aa: u64,
+    // ) -> SecurityConfiguration {
+    //     SecurityConfiguration {
+    //         root_authority_number,
+    //         aa_per_root,
+    //         ticket_per_aa,
+    //     }
+    // }
 
     fn generate_root_authority(
         root_number: u64,

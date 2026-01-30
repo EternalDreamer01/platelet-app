@@ -71,38 +71,11 @@ RUN source ${OMNETPP_HOME}/setenv \
         WITH_OSGEARTH=no \
 	&& make -j${PROCESSORS}
 
-# RUN find ${OMNETPP_HOME} -name *.cmake && exit 1
-
 ENV PATH=${OMNETPP_HOME}/bin:$PATH \
     LD_LIBRARY_PATH=${OMNETPP_HOME}/lib:$LD_LIBRARY_PATH
 
 # --------------------
-# Vanetza (CERTIFY FIRST)
-# --------------------
-WORKDIR ${DEPS_PATH}
-RUN git clone --depth=1 https://github.com/riebl/vanetza.git
-
-WORKDIR ${DEPS_PATH}/vanetza
-
-RUN cmake -S . -B build -G Ninja \
-      -DBUILD_CERTIFY=ON \
-      -DBUILD_TESTS=OFF \
-      -DBUILD_BENCHMARK=OFF \
-      -DOmnetPP_DIR=${OMNETPP_HOME}/lib/cmake/OmnetPP \
-      -DCMAKE_BUILD_TYPE=Release \
-      -DCMAKE_C_COMPILER_LAUNCHER=ccache \
-      -DCMAKE_CXX_COMPILER_LAUNCHER=ccache \
- && cmake --build build --parallel ${PROCESSORS} \
- && cmake --install build
-RUN mv build/bin/* /usr/local/bin/
-
-# --------------------
-# HARD FAIL if CERTIFY missing
-# --------------------
-RUN which certify
-
-# --------------------
-# Artery (FORCED to CERTIFY Vanetza)
+# Artery (FORCED to include CERTIFY from Vanetza)
 # --------------------
 WORKDIR ${DEPS_PATH}
 RUN git clone --recurse-submodules --depth=1 -j${PROCESSORS} https://github.com/riebl/artery.git
@@ -111,12 +84,25 @@ WORKDIR ${DEPS_PATH}/artery
 
 RUN source ${OMNETPP_HOME}/setenv \
 	&& cmake -S . -B build -G Ninja \
-      -DOmnetPP_DIR=${OMNETPP_HOME}/lib/cmake/OmnetPP \
       -DCMAKE_PREFIX_PATH=/usr/local \
       -DCMAKE_BUILD_TYPE=Release \
-      -Dvanetza_DIR=/usr/local/lib/cmake/vanetza \
+      -DBUILD_CERTIFY=ON \
+      -DBUILD_TESTS=OFF \
+      -DBUILD_BENCHMARK=OFF \
 	&& cmake --build build --parallel ${PROCESSORS} \
 	&& cmake --install build
+RUN mv ./build/extern/vanetza/bin/certify /usr/local/bin/
+
+# --------------------
+# HARD FAIL if CERTIFY missing
+# --------------------
+RUN which certify
+
+# Clean (large) unused directories...
+RUN rm -rf build/ .git/
+
+WORKDIR ${OMNETPP_HOME}
+RUN rm -rf build/ .git/ ide/ out/ doc/
 
 
 # =========================
@@ -124,6 +110,7 @@ RUN source ${OMNETPP_HOME}/setenv \
 # =========================
 FROM node:$NODE_VERSION-bookworm AS runtime
 
+ARG PROCESSORS=16
 ARG DEPS_PATH=/opt
 ARG OMNETPP_VERSION=5.6.3
 ENV OMNETPP_HOME=$DEPS_PATH/omnetpp-${OMNETPP_VERSION} \
@@ -136,10 +123,6 @@ ENV PATH=$OMNETPP_HOME/bin:$SUMO_HOME/bin:/root/.cargo/bin:/usr/local/bin:$PATH 
     NO_AT_BRIDGE=1 \
     RUST_BACKTRACE=1 \
     CI=true
-
-COPY --from=builder $OMNETPP_HOME $OMNETPP_HOME
-COPY --from=builder $ARTERY_HOME $ARTERY_HOME
-COPY --from=builder /usr/local /usr/local
 
 RUN apt-get update && apt-get install -y \
 		sumo \
@@ -155,21 +138,21 @@ RUN apt-get update && apt-get install -y \
 		libssl-dev \
 		python3 \
 		curl \
-		git \
 		cmake \
 	&& rm -rf /var/lib/apt/lists/*
-
-RUN git clone --depth=1 https://github.com/omnetpp/cmake.git $OMNETPP_HOME/cmake
 
 # --------------------
 # Rust + Node deps (build only)
 # --------------------
 RUN curl https://sh.rustup.rs -sSf | sh -s -- -y
 RUN mkdir -p $HOME/.cargo \
-	&& printf "[build]\njobs = %d" 4 > $HOME/.cargo/config.toml
+	&& printf "[build]\njobs = %d" $PROCESSORS > $HOME/.cargo/config.toml
 
-RUN apt-get remove -y curl git && apt-get autoremove -y && apt-get clean
+RUN apt-get remove -y curl && apt-get autoremove -y && apt-get clean
 
+COPY --from=builder $OMNETPP_HOME $OMNETPP_HOME
+COPY --from=builder $ARTERY_HOME $ARTERY_HOME
+COPY --from=builder /usr/local /usr/local
 
 WORKDIR $PLATELET_TAURI_HOME
 COPY src-tauri/Cargo.toml src-tauri/Cargo.lock ./
@@ -189,4 +172,4 @@ RUN cargo build
 
 WORKDIR $PLATELET_HOME
 
-CMD ["/bin/bash", "-lc", "source $OMNETPP_HOME/setenv && pnpm tauri dev"]
+CMD ["pnpm", "tauri", "dev"]

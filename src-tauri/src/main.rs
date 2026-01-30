@@ -45,12 +45,6 @@ fn compile_artery() -> Result<(), String> {
 	println!("Artery path: {}", loaded_project.artery_path);
 	println!("Build path: {}", build_path.display());
 
-	// let OMNETPP_HOME: std::string::String = std::env::var("OMNETPP_HOME")
-	// 	.expect("OMNETPP_HOME is not set");
-
-	// let ARTERY_HOME: std::string::String = std::env::var("ARTERY_HOME")
-	// 	.expect("ARTERY_HOME is not set");
-
     Command::new("cmake")
         .args([
 			"-S",

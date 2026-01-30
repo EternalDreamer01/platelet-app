@@ -1,6 +1,6 @@
 use std::{
     collections::HashMap,
-    fs::{self, create_dir, File, OpenOptions},
+    fs::{self, create_dir, File},
     io::Write,
     process::{Command, ExitStatus},
 };
@@ -23,11 +23,11 @@ pub struct ArteryConfigurationBuilder {
 
 impl ArteryConfigurationBuilder {
     pub fn new(artery_path: String) -> ArteryConfigurationBuilder {
-        let PLATELET_TAURI_HOME: std::string::String = std::env::var("PLATELET_TAURI_HOME")
-			.expect("PLATELET_TAURI_HOME is not set");
+        let tauri_home: std::string::String = std::env::var("PLATELET_TAURI_HOME")
+			.expect("tauri_home is not set");
 		
         ArteryConfigurationBuilder {
-			map_path: format!("{}/assets/map.osm", PLATELET_TAURI_HOME),
+			map_path: format!("{}/assets/map.osm", tauri_home),
             artery_path,
             trips_number: 10,
             ..Default::default()
@@ -162,11 +162,11 @@ impl ArteryConfigurationBuilder {
     fn build_omnet_config_file(&self, scenario_path: String) -> Result<(), String> {
         let sumocfg_path = format!("{}/{}.sumocfg", scenario_path, self.project_name);
 
-		let PLATELET_TAURI_HOME: std::string::String = std::env::var("PLATELET_TAURI_HOME")
-			.expect("PLATELET_TAURI_HOME is not set");
+		let tauri_home: std::string::String = std::env::var("PLATELET_TAURI_HOME")
+			.expect("tauri_home is not set");
 		
         fs::copy(
-            &format!("{}/assets/vehicles.xml", PLATELET_TAURI_HOME),
+            &format!("{}/assets/vehicles.xml", tauri_home),
             scenario_path.to_owned() + "/vehicles.xml",
         )
         .map_err(|e| {
@@ -243,7 +243,7 @@ set(CMAKE_MODULE_PATH "${{ARTERY_HOME}}/cmake")
 add_subdirectory(${{ARTERY_HOME}} artery)
 
 # set(PROJECT_NAME ${{PROJECT_NAME}})
-set(ASSETS "$ENV{{PLATELET_TAURI_HOME}}/assets")
+set(ASSETS "$ENV{{tauri_home}}/assets")
 add_opp_run(
 	${{PROJECT_NAME}}
 	CONFIG omnetpp.ini
