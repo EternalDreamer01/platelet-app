@@ -16,6 +16,7 @@ docker run --rm \
 
 ### Build
 ```sh
+git clone --depth=1 https://github.com/EternalDreamer01/platelet-app
 npm run docker:build
 npm run docker:run
 ```
