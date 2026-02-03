@@ -1,6 +1,6 @@
 # Platelet-App
 
-The Platelet application greatly simplify configuration of secured scenario runned by the fork of the Artery simulation framework provided by Platelet. This app is a Tauri app with a Rust backend and a Nuxt frontend.
+The Platelet application greatly simplify configuration of secured scenario runned by the fork of the [Artery](https://artery.v2x-research.eu/) simulation framework provided by Platelet. This app is a [Tauri](https://tauri.app/) app with a Rust backend and a Nuxt frontend.
 
 ## Docker
 
@@ -26,18 +26,12 @@ npm run docker:run
 ./install.sh
 ```
 The script will setup and install the requirements :
-- Compilers: gcc, bison, ninja, cmake, autoconf
+- Compilers (i.e gcc, bison, ninja, cmake, autoconf)
 - Python3 with venv
-- GTK 3
-- Boost
-- SUMO
-- GeographicLib
-- Crypto++
-- Node 20+ with `nvm` and `pnpm`
+- [SUMO](https://eclipse.dev/sumo/)
+- Node 20+ with [`nvm`](https://github.com/nvm-sh/nvm) and [`pnpm`](https://pnpm.io/)
 - Rust
-- Artery, which include Vanetza
-
-## Usage
+- [Artery](https://artery.v2x-research.eu/install/) which include [Vanetza](https://www.vanetza.org/)
 
 You can now compile and run the platelet app using `pnpm tauri dev`.
 
