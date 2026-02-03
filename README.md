@@ -10,9 +10,10 @@ docker run --rm \
 	-p 3000:3000 \
 	-e DISPLAY=$DISPLAY \
 	-v /tmp/.X11-unix:/tmp/.X11-unix \
-	-v./data:/root/platelet:rw \
+	-v ./data:/root/platelet:rw \
 	--device /dev/dri mikecod/platelet
 ```
+*You might eventually change `./data` at line 5 to save in another directory.*
 
 ### Build
 ```sh
