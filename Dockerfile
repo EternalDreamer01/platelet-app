@@ -20,7 +20,7 @@ ENV DEBIAN_FRONTEND=noninteractive \
 SHELL ["/bin/bash", "-c"]
 
 # --------------------
-# Build dependencies
+# Dependencies
 # --------------------
 RUN apt-get update && apt-get install -y --no-install-recommends \
     build-essential \
