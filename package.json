@@ -3,8 +3,9 @@
   "private": true,
   "type": "module",
   "scripts": {
-	"docker:build": "docker build --rm --target runtime -t platelet .",
-	"docker:run": "docker run --rm -e DISPLAY=$DISPLAY -v./data:/root/platelet:rw -v /tmp/.X11-unix:/tmp/.X11-unix --device /dev/dri platelet",
+	"docker:build0": "docker build --rm --target runtime -t platelet .",
+	"docker:build": "npm run docker:build0 -- --check && npm run docker:build0",
+	"docker:run": "docker run --rm -e DISPLAY=$DISPLAY -v./data:/root/platelet:rw -v /tmp/.X11-unix:/tmp/.X11-unix --device /dev/dri --network=host platelet",
     "build": "nuxt build",
     "dev": "nuxt dev",
     "generate": "nuxt generate",

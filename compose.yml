@@ -1,0 +1,11 @@
+services:
+  platelet:
+    build:
+      target: runtime
+    environment:
+      - DISPLAY=$DISPLAY
+    volumes:
+      - ./data:/root/platelet:rw
+      - /tmp/.X11-unix:/tmp/.X11-unix
+    devices:
+      - /dev/dri

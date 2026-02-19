@@ -7,7 +7,6 @@ The Platelet application greatly simplify configuration of secured scenario runn
 ### Pre-built
 ```sh
 docker run --rm \
-	-p 3000:3000 \
 	-e DISPLAY=$DISPLAY \
 	-v /tmp/.X11-unix:/tmp/.X11-unix \
 	-v ./data:/root/platelet:rw \
@@ -22,6 +21,13 @@ npm run docker:build
 npm run docker:run
 ```
 
+#### Advises
+
+* Change the numbers of cores to use for compilation with `--build-arg PROCESSORS=X` by up to 2/3 of your total cores for better system stability.
+* A good internet connection is desirable
+* Close processes as much as possible, and avoid using internet in same time by other processes
+*It can take up to 50 minutes, depending on the conditions above*
+
 ## Installation on Host
 
 ```sh
@@ -35,7 +41,11 @@ The script will setup and install the requirements :
 - Rust
 - [Artery](https://artery.v2x-research.eu/install/) which include [Vanetza](https://www.vanetza.org/)
 
-You can now compile and run the platelet app using `pnpm tauri dev`.
+## Usage
+
+Run the platelet app using ;
+
+If you installed on host, run the platelet app using `pnpm tauri dev`
 
 To understand how to use the Platelet you can look up the two demo videos:
 * https://youtu.be/WuIl59mwxi0

@@ -232,6 +232,9 @@ impl ArteryConfigurationBuilder {
 		let mut cmake_scenario_file = File::create(&cmake_scenario_path)
 			.map_err(|e| format!("Can't create {}: {}", cmake_scenario_path.display(), e))?;
 
+        let artery_home: std::string::String = std::env::var("ARTERY_HOME")
+			.expect("artery_home is not set");
+
 		cmake_scenario_file
 			.write_all(format!(r#"
 cmake_minimum_required(VERSION 3.20)
@@ -264,6 +267,8 @@ add_opp_run(
 		let omnetpp_content = std::fs::read_to_string(&omnetpp_scenario_path)
 			.map_err(|e| format!("Can't read {}: {}", omnetpp_scenario_path.display(), e))?;
 		let omnetpp_content = omnetpp_content.replace("${PROJECT_NAME}", &self.project_name);
+
+		let omnetpp_content = omnetpp_content.replace("${ARTERY_HOME}", &artery_home);
 		fs::write(&omnetpp_scenario_path, omnetpp_content)
 				.map_err(|e| format!("Can't write to {}: {}", omnetpp_scenario_path.display(), e))?;
 		Ok(())

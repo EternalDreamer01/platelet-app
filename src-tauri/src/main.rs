@@ -51,6 +51,9 @@ fn compile_artery() -> Result<(), String> {
 			&("./scenarios/".to_owned()+&loaded_project.project_name),
 			"-B",
 			PROJECT_BUILD,
+			"-DCMAKE_BUILD_TYPE=Release",
+			"-DCMAKE_C_COMPILER_LAUNCHER=ccache",
+			"-DCMAKE_CXX_COMPILER_LAUNCHER=ccache"
 			// &format!("-DCMAKE_MODULE_PATH={}", OMNETPP_HOME), //, ARTERY_HOME),
 		])
         .spawn()

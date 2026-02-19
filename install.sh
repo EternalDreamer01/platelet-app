@@ -58,8 +58,8 @@ curl -o- https://raw.githubusercontent.com/nvm-sh/nvm/v0.40.3/install.sh | bash
 nvm install 24
 
 # Verify the versions:
-node -v # Should print "v24.13.0".
-npm -v # Should print "11.6.2".
+node -v # Should print "v24.x.x".
+npm -v # Should print "11.x.x".
 
 # Use pnpm as Node package manager
 npm install -g pnpm
@@ -96,7 +96,7 @@ mv ./build/extern/vanetza/bin/certify /usr/local/bin/
 # --------------------
 # HARD FAIL if CERTIFY missing
 # --------------------
-which certify || { echo "FATAL: 'certify' not found in PATH after build!"; exit 1; }
+which certify && certify || [ $? -le 1 ] || { echo "FATAL: 'certify' not found in PATH after build!"; exit 1; }
 
 cd "${DEPS_PATH}" && pnpm install
 cd "${DEPS_PATH}/src-tauri" && cargo build

@@ -49,6 +49,17 @@ impl SecurityConfiguration {
             + "/certificate/roots/root"
             + &root_number.to_string()
             + ".cert";
+		
+		
+		// // Get existing LD_LIBRARY_PATH if any
+		// let existing = std::env::var("LD_LIBRARY_PATH").unwrap_or_default();
+
+		// // Add your Vanetza path
+		// let new_path = format!(
+		// 	// format!("{}/assets/map.osm", tauri_home)
+		// 	"/root/platelet/build/artery/extern/vanetza/lib:{}",
+		// 	existing
+		// );
 
         Command::new("certify")
             .args(["generate-key", key_path.as_str()])
