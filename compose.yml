@@ -4,6 +4,7 @@ services:
       target: runtime
     environment:
       - DISPLAY=$DISPLAY
+      - PROCESSOR=$(printf "%d" $(($(nproc) / 1.5 )))
     volumes:
       - ./data:/root/platelet:rw
       - /tmp/.X11-unix:/tmp/.X11-unix

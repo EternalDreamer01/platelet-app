@@ -36,21 +36,26 @@ fn compile_artery() -> Result<(), String> {
     let artery_path = loaded_project.artery_path.clone();
     set_current_dir(artery_path).map_err(|e| format!("Can't change directory to artery: {}", e))?;
 
-    let build_path = Path::new(PROJECT_BUILD);
+    let scenario_path = Path::new("./scenarios")
+		.join(loaded_project.project_name.clone());
 
-    create_folder_if_not_exist(build_path)
+    let build_path = scenario_path
+		.join("build").display().to_string();
+
+    create_folder_if_not_exist(&build_path)
         .map_err(|e| format!("Can't create build directory: {}", e))?;
 
 	println!("Project path: {}", loaded_project.project_name);
 	println!("Artery path: {}", loaded_project.artery_path);
-	println!("Build path: {}", build_path.display());
+	println!("Scenario path: {}", &scenario_path.display().to_string());
+	println!("Build path: {}", &build_path);
 
     Command::new("cmake")
         .args([
 			"-S",
-			&("./scenarios/".to_owned()+&loaded_project.project_name),
+			&scenario_path.display().to_string(),
 			"-B",
-			PROJECT_BUILD,
+			&build_path,
 			"-DCMAKE_BUILD_TYPE=Release",
 			"-DCMAKE_C_COMPILER_LAUNCHER=ccache",
 			"-DCMAKE_CXX_COMPILER_LAUNCHER=ccache"
@@ -78,7 +83,7 @@ fn compile_artery() -> Result<(), String> {
     Command::new("cmake")
         .args([
             "--build",
-            PROJECT_BUILD,
+            &build_path,
             "--target",
             format!("run_{}", loaded_project.project_name).as_str(),
 			"--parallel",

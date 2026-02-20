@@ -55,7 +55,15 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
 	libgtk-3-dev \
     sumo sumo-tools \
 	gdb \
-	dbus-x11
+	dbus-x11 \
+    qtbase5-dev qtchooser qt5-qmake qtbase5-dev-tools \
+    libqt5opengl5-dev \
+	doxygen \
+	graphviz \
+	xdg-utils \
+    mpi-default-dev \
+	libpcap-dev
+
 RUN apt-get autoremove -y && apt-get clean && rm -rf /var/lib/apt/lists/*
 
 # --------------------
@@ -88,7 +96,7 @@ WORKDIR ${OMNETPP_HOME}
 
 RUN source ${OMNETPP_HOME}/setenv \
 	&& ./configure \
-        WITH_QTENV=no \
+        WITH_QTENV=yes \
         WITH_TKENV=no \
         WITH_OSG=no \
         WITH_OSGEARTH=no \
@@ -141,9 +149,9 @@ RUN npm install -g pnpm && pnpm install
 
 # Clean (large) unused directories...
 WORKDIR ${ARTERY_HOME}
-RUN rm -rf build/ .git/
+RUN rm -rf .git/
 WORKDIR ${OMNETPP_HOME}
-RUN rm -rf build/ .git/ ide/ out/ doc/
+RUN rm -rf .git/ ide/ out/ doc/
 
 # --------------------
 # Build project
@@ -160,6 +168,7 @@ ENV NO_AT_BRIDGE=1 \
 	RUST_BACKTRACE=1 \
 	CI=true \
 	LIBGL_ALWAYS_SOFTWARE=1 \
+	XDG_RUNTIME_DIR=/tmp/runtime \
 	LD_LIBRARY_PATH="/root/platelet/build/artery/extern/vanetza/lib:$LD_LIBRARY_PATH"
 
 CMD ["pnpm", "tauri", "dev"]

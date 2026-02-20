@@ -1,9 +1,13 @@
 #!/bin/bash
 
 
-project_name="${1:-test}"
-container_id="${2:-$(docker container ls -q)}"
+project_name="${2:-test}"
+container_id="${3:-$(docker container ls -q)}"
 
-cmd="cd '/root/platelet/scenarios/${project_name}'"
+cmd="$1"
 
-docker exec -it "$container_id" bash
+if [ -z "$cmd" ]; then
+	docker exec -it "$container_id" bash
+else
+	docker exec -it "$container_id" bash -c "$cmd"
+fi
