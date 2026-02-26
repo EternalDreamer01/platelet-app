@@ -52,7 +52,7 @@ impl ArteryConfigurationBuilder {
 	fn build_net(osmfile_path: &str, netfile_path: &str) -> Result<ExitStatus, String> {
 		// println!("netconvert exists: {}", Path::new("/usr/bin/netconvert").exists());
 
-		let output = Command::new("/usr/bin/netconvert") // absolute path
+		let output = Command::new("netconvert") // absolute path
 			.args([
 				"--osm-files",
 				osmfile_path,
@@ -246,7 +246,7 @@ set(CMAKE_MODULE_PATH "${{ARTERY_HOME}}/cmake")
 add_subdirectory(${{ARTERY_HOME}} artery)
 
 # set(PROJECT_NAME ${{PROJECT_NAME}})
-set(ASSETS "$ENV{{tauri_home}}/assets")
+# set(ASSETS "$ENV{{tauri_home}}/assets")
 add_opp_run(
 	${{PROJECT_NAME}}
 	CONFIG omnetpp.ini

@@ -15,7 +15,7 @@ mod security_configuration;
 mod config_template_path;
 
 static LOADED_PROJECT: OnceCell<Mutex<Project>> = OnceCell::new();
-const PROJECT_BUILD: &str = "./build";
+// const PROJECT_BUILD: &str = "./build";
 
 //TODO: move commands in dedicated file main is too long
 

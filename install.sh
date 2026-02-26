@@ -1,8 +1,6 @@
 #!/bin/bash
 
-
-_cpus=$(nproc)
-PROCESSORS=$(( _cpus * 2 / 3 ))
+PROCESSORS=$(printf "%d" $(($(nproc) / 1.5 )))
 DEPS_PATH="$PWD"
 OMNETPP_VERSION=5.6.3
 

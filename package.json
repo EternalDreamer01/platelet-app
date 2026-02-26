@@ -4,8 +4,8 @@
   "type": "module",
   "scripts": {
 	"docker:build0": "docker build --rm --target runtime -t platelet .",
-	"docker:build": "npm run docker:build0 -- --check && npm run docker:build0",
-	"docker:run": "docker run --rm -e DISPLAY=$DISPLAY -v./data:/root/platelet:rw -v /tmp/.X11-unix:/tmp/.X11-unix --device /dev/dri --cpus=$(printf '%d' $(($(nproc) / 1.5 ))) platelet",
+	"docker:build": "npm run docker:build0 -- --check && npm run docker:build0 && notify-send \"Platelet docker build\" \"Docker build finished with exit code $?\"",
+	"docker:run": "docker run --rm -e DISPLAY=$DISPLAY -v./data:/root/platelet:rw -v /tmp/.X11-unix:/tmp/.X11-unix --device /dev/dri --cpus=16 platelet",
     "build": "nuxt build",
     "dev": "nuxt dev",
     "generate": "nuxt generate",

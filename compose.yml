@@ -4,9 +4,24 @@ services:
       target: runtime
     environment:
       - DISPLAY=$DISPLAY
-      - PROCESSOR=$(printf "%d" $(($(nproc) / 1.5 )))
+      - PROCESSORS=16 # $(printf "%d" $(($(nproc) / 1.5 )))
     volumes:
       - ./data:/root/platelet:rw
+      - $HOME/.cache/platelet:/ccache:rw
       - /tmp/.X11-unix:/tmp/.X11-unix
     devices:
       - /dev/dri
+    # cpu_percent: ${CPU_PERCENT:-70} # Window only
+    cpu_count: ${PROCESSORS:-16}
+    # mem_limit: ${MEMORY:-12G}
+    # deploy:
+    #   resources:
+    #     limits:
+    #       cpus: ${PROCESSORS:-16}
+    #       memory: ${MEMORY:-12G}
+    #       pids: 1
+    #     reservations:
+    #       cpus: ${PROCESSORS:-1}
+    #       memory: ${MEMORY:-1G}
+    # entrypoint: ["/bin/bash", "-c"]
+    # command: npm tauri dev

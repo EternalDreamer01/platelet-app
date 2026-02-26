@@ -11,12 +11,14 @@ docker run --rm \
 	--cpus=$(printf "%d" $(($(nproc) / 1.5 ))) \
 	-v /tmp/.X11-unix:/tmp/.X11-unix \
 	-v ./data:/root/platelet:rw \
+	-v $HOME/.cache/platelet:/ccache:rw \
 	--device /dev/dri \
 	mikecod/platelet
 ```
 You can eventually change ;
-* `./data` at line 5 to save in another directory.
-* `--cpus=$(printf "%d" $(($(nproc) / 1.5 )))` at line 3, to specify another number of CPUs the container can use. For better system stability you might avoid going above 2/3 (nproc/1.5) for the total CPUs available. The lower this restriction is, the slower a project build will be.
+* `$HOME/.cache/platelet:/ccache:rw` line 6, remove if you do not want to cache (can speed up compilation of projects),
+* `./data` line 5 to save in another directory,
+* `--cpus=$(printf "%d" $(($(nproc) / 1.5 )))` line 3, to specify another number of CPUs the container can use. For better system stability you might avoid going above 2/3 (nproc/1.5) for the total CPUs available. The lower this restriction is, the slower a project build will be.
 
 ### Build
 ```sh
